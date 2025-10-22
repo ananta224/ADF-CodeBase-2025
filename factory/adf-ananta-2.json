@@ -1,0 +1,44 @@
+{
+	"name": "adf-ananta-2",
+	"properties": {
+		"globalParameters": {
+			"GlobalContainerName": {
+				"type": "string",
+				"value": "output/global-output"
+			},
+			"outputContainer": {
+				"type": "string",
+				"value": "output/global-parameter"
+			},
+			"pipeline_to_run": {
+				"type": "array",
+				"value": [
+					"pipeline_1",
+					"pipeline_2"
+				]
+			},
+			"inBoundDirectory": {
+				"type": "string",
+				"value": "input/inbound"
+			},
+			"outBoundDirectory": {
+				"type": "string",
+				"value": "input/outbound"
+			},
+			"Config_File_Name": {
+				"type": "string",
+				"value": "pipeline_to_run.csv"
+			},
+			"paramfile": {
+				"type": "string",
+				"value": "input/paramfile"
+			}
+		}
+	},
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "47886709-2736-44f8-bc94-df607cc6be88",
+		"tenantId": "17ed23b9-b7c3-43ea-b786-7d00551bc485"
+	}
+}

@@ -1,0 +1,19 @@
+{
+	"name": "ds_adls_output_json_employees",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_ananta_2",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileSystem": "output"
+			}
+		},
+		"schema": {}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

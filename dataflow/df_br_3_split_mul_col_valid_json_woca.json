@@ -1,0 +1,103 @@
+{
+	"name": "df_br_3_split_mul_col_valid_json_woca",
+	"properties": {
+		"folder": {
+			"name": "BR-ADF Tasks"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_mysql_ananta_adf",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_ananta_2",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "splitData"
+				},
+				{
+					"name": "addObjName"
+				},
+				{
+					"name": "flatten1"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "replaceObjectsArr"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          emp_id as integer,",
+				"          fullName as string,",
+				"          dept_id as integer,",
+				"          dept_name as string,",
+				"          position as string,",
+				"          salary as integer,",
+				"          hire_date as date",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table',",
+				"     tableName: 'employee_pos_tb',",
+				"     store: 'mysql',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> source1",
+				"source1 derive(fullName = split(fullName, '^'),",
+				"          position = split(position,'^')) ~> splitData",
+				"flatten1 aggregate(groupBy(emp_id),",
+				"     fullName = distinct(collect(@(fullName=fullName))),",
+				"          position = distinct(collect(@(position=position)))) ~> addObjName",
+				"splitData foldDown(unrollMultiple(fullName,position),",
+				"     mapColumn(",
+				"          emp_id,",
+				"          fullName,",
+				"          dept_id,",
+				"          dept_name,",
+				"          position,",
+				"          salary,",
+				"          hire_date",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flatten1",
+				"addObjName derive(fullName = iif(isNull(fullName[2]), replace(replace(split(toString(fullName[1]), ':')[2], '}', ''), '\"', ''), toString(fullName)),",
+				"          position = iif(isNull(position[2]), replace(replace(split(toString(position[1]), ':')[2], '}', ''), '\"', ''), toString(position))) ~> derivedColumn1",
+				"derivedColumn1 aggregate(employees_pos_tb_col = toString(collect(@(emp_id=emp_id, fullName=fullName, position=position)))) ~> aggregate1",
+				"aggregate1 derive(employees_pos_tb_col = replace(replace(replace(replace(employees_pos_tb_col, '\"[\\\\', '['),'\\\\\"' ,'\"' ), ']\"', ']'), '\"[{', '[{')) ~> replaceObjectsArr",
+				"replaceObjectsArr sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delimited',",
+				"     fileSystem: 'output',",
+				"     rowDelimiter: '',",
+				"     columnDelimiter: '',",
+				"     escapeChar: '',",
+				"     quoteChar: '',",
+				"     columnNamesAsHeader: false,",
+				"     partitionFileNames:['my_json_op_data.json'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}

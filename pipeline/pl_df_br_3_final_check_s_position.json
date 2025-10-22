@@ -1,0 +1,104 @@
+{
+	"name": "pl_df_br_3_final_check_s_position",
+	"properties": {
+		"activities": [
+			{
+				"name": "df_br_2_final_check",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_br_3_final_check_s_position",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sink1": {
+								"TableName": "employees_pos_tb"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Copy data1",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "df_br_2_final_check",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureMySqlSource",
+						"query": "SELECT\nREPLACE(REPLACE(REPLACE(employees_pos_tb_col, '\\\\\"', '\"'), '\"[', '['), ']\"', ']') AS employees_pos_tb_col\nFROM employees_pos_tb;",
+						"queryTimeout": "02:00:00"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_mysql_ananta_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"TableName": "employees_pos_tb"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_output__ananta_csv_json_dyn_copy1",
+						"type": "DatasetReference",
+						"parameters": {
+							"fileName": "hello_myoutputdata1.json"
+						}
+					}
+				]
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-08-03T16:04:08Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

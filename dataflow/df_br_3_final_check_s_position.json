@@ -1,0 +1,97 @@
+{
+	"name": "df_br_3_final_check_s_position",
+	"properties": {
+		"folder": {
+			"name": "BR-ADF Tasks"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_mysql_ananta_adf",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_mysql_ananta_dyn",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "flatten1"
+				},
+				{
+					"name": "makeProperOutputCol"
+				},
+				{
+					"name": "ColumnNameBeforeNestedObject"
+				},
+				{
+					"name": "tableStructure"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          emp_id as integer,",
+				"          fullName as string,",
+				"          dept_id as integer,",
+				"          dept_name as string,",
+				"          position as string,",
+				"          salary as integer,",
+				"          hire_date as date",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table',",
+				"     tableName: 'employee_pos_tb',",
+				"     store: 'mysql',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> source1",
+				"source1 derive(fullName = split(fullName, '^'),",
+				"          position = split(position, '^')) ~> derivedColumn1",
+				"derivedColumn1 foldDown(unrollMultiple(fullName,position),",
+				"     mapColumn(",
+				"          emp_id,",
+				"          fullName,",
+				"          dept_id,",
+				"          dept_name,",
+				"          position,",
+				"          salary,",
+				"          hire_date",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flatten1",
+				"flatten1 aggregate(groupBy(emp_id,",
+				"          dept_id,",
+				"          dept_name,",
+				"          salary,",
+				"          hire_date),",
+				"     fullName = distinct(collect(@(fullName=fullName))),",
+				"          position = distinct(collect(@(position=position)))) ~> makeProperOutputCol",
+				"makeProperOutputCol derive(fullName = iif( isNull(fullName[2]),    replace(replace(split(toString(fullName[1]), ':')[2], '}', ''), '\"', ''),    toString(fullName)),",
+				"          position = iif( isNull(position[2]),    replace(replace(split(toString(position[1]), ':')[2], '}', ''), '\"', ''),    toString(position))) ~> ColumnNameBeforeNestedObject",
+				"ColumnNameBeforeNestedObject aggregate(employees_pos_tb_col = toString(collect(@(emp_id=emp_id, fullName=fullName, dept_id=dept_id,dept_name=dept_name,position=position,salary=salary,hire_date=hire_date)))) ~> tableStructure",
+				"tableStructure sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     recreate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
+			]
+		}
+	}
+}

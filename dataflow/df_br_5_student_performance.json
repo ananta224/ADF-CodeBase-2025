@@ -1,0 +1,90 @@
+{
+	"name": "df_br_5_student_performance",
+	"properties": {
+		"folder": {
+			"name": "BR-ADF Tasks"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_mysql_ananta_adf",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_ananta_2",
+						"type": "LinkedServiceReference"
+					},
+					"name": "Sink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "aggregateSubject"
+				},
+				{
+					"name": "aggregateIntoTermsArray"
+				},
+				{
+					"name": "makeValidJson"
+				},
+				{
+					"name": "FilterAbove80eql"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          StudentID as integer,",
+				"          StudentName as string,",
+				"          Class as string,",
+				"          Term as string,",
+				"          Subject as string,",
+				"          Marks as integer,",
+				"          Attendance as decimal(5,2),",
+				"          Remarks as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table',",
+				"     tableName: 'studentperformance',",
+				"     store: 'mysql',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> source1",
+				"FilterAbove80eql aggregate(groupBy(StudentName,",
+				"          StudentID,",
+				"          Class,",
+				"          Attendance,",
+				"          Term),",
+				"     Subjects = collect(@(Name=Subject,Mark=Marks,Remark=Remarks))) ~> aggregateSubject",
+				"aggregateSubject aggregate(groupBy(StudentID,",
+				"          StudentName,",
+				"          Class),",
+				"     terms = collect(@(Term=Term,Attendance=Attendance,Subject=Subjects))) ~> aggregateIntoTermsArray",
+				"aggregateIntoTermsArray aggregate(student_performance_tb = collect(@(StudentID=StudentID,StudentName=StudentName,Class=Class,terms=terms))) ~> makeValidJson",
+				"source1 filter(Marks>=80) ~> FilterAbove80eql",
+				"makeValidJson sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delimited',",
+				"     fileSystem: 'output',",
+				"     folderPath: 'my_temp_folder',",
+				"     rowDelimiter: '',",
+				"     columnDelimiter: '',",
+				"     escapeChar: '',",
+				"     quoteChar: '',",
+				"     columnNamesAsHeader: false,",
+				"     partitionFileNames:['sturdent_performance.json'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> Sink"
+			]
+		}
+	}
+}

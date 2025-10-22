@@ -1,0 +1,19 @@
+{
+	"name": "ds_adls_book_xml",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_ananta_2",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Xml",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "books.xml",
+				"fileSystem": "input"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

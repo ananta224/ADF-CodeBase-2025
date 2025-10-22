@@ -1,0 +1,105 @@
+{
+	"name": "pl_br_1_dynamic",
+	"properties": {
+		"activities": [
+			{
+				"name": "MYSQL-TO-JSON",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Lookup1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureMySqlSource",
+						"query": {
+							"value": "CREATE TABLE IF NOT EXISTS unformatted_json_data2 (test TEXT);\nINSERT INTO unformatted_json_data2 (test) VALUES ('@{activity('Lookup1').output.firstRow.test}');\nSELECT REPLACE(test, '\"\"', '\"') AS cleaned_json FROM unformatted_json_data2;\nDROP TABLE IF EXISTS unformatted_json_data2;",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".json"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_mysql_ananta_json",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_output__ananta_csv_json_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"fileName": "Ananta_formatted_json_data.json"
+						}
+					}
+				]
+			},
+			{
+				"name": "Lookup1",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureMySqlSource",
+						"queryTimeout": "02:00:00"
+					},
+					"dataset": {
+						"referenceName": "ds_mysql_ananta_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"TableName": "unformatted_json_data"
+						}
+					},
+					"firstRowOnly": true
+				}
+			}
+		],
+		"folder": {
+			"name": "BR-ADF Tasks"
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-08-01T04:35:02Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

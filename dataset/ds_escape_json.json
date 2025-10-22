@@ -1,0 +1,33 @@
+{
+	"name": "ds_escape_json",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_ananta_2",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "Ananta"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "Input_error.json",
+				"fileSystem": "input"
+			}
+		},
+		"schema": {
+			"type": "object",
+			"properties": {
+				"ZOONOTICCaseList": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

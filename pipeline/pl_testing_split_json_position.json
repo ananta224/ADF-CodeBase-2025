@@ -1,0 +1,225 @@
+{
+	"name": "pl_testing_split_json_position",
+	"properties": {
+		"activities": [
+			{
+				"name": "df_br_2_json_convert",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_br_2_json_convert_copy_position",
+						"type": "DataFlowReference",
+						"parameters": {
+							"jsonfile1": {
+								"value": "'@{pipeline().parameters.jsonFile1}'",
+								"type": "Expression"
+							},
+							"jsonfile2": {
+								"value": "'@{pipeline().parameters.jsonFile2}'",
+								"type": "Expression"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Merge Two JSON File",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Lookup File1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Lookup File2",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureMySqlSource",
+						"query": {
+							"value": "@concat(\n  'TRUNCATE TABLE JSON_TB1;',\n  'INSERT INTO JSON_TB1 (COL1, COL2) VALUES (''',\n  string(activity('Lookup File1').output.value),\n  ''', ''',\n  string(activity('Lookup File2').output.value),\n  '''); ',\n  'SELECT REPLACE(CONCAT(COL1, COL2), '']['', '','') FROM JSON_TB1;'\n)\n",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_mysql_ananta_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"TableName": "JSON_TB1"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_output__ananta_csv_json_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"fileName": {
+								"value": "@pipeline().parameters.json_outp_file_name",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Lookup File1",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "df_br_2_json_convert",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_adls_json_multiple_file",
+						"type": "DatasetReference",
+						"parameters": {
+							"containerName": {
+								"value": "output",
+								"type": "Expression"
+							},
+							"fileName": "@pipeline().parameters.jsonFile1"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Lookup File2",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "df_br_2_json_convert",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_adls_json_multiple_file",
+						"type": "DatasetReference",
+						"parameters": {
+							"containerName": {
+								"value": "output",
+								"type": "Expression"
+							},
+							"fileName": "@pipeline().parameters.jsonFile2"
+						}
+					},
+					"firstRowOnly": false
+				}
+			}
+		],
+		"parameters": {
+			"jsonFile1": {
+				"type": "string",
+				"defaultValue": "myjsontab11.json"
+			},
+			"jsonFile2": {
+				"type": "string",
+				"defaultValue": "myjsontab22.json"
+			},
+			"json_outp_file_name": {
+				"type": "string",
+				"defaultValue": "mytotaljson_data.json"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-07-29T07:32:06Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

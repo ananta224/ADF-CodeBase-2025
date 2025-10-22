@@ -1,0 +1,105 @@
+{
+	"name": "df_br_5_dyn_column_range_multiple_split",
+	"properties": {
+		"folder": {
+			"name": "BR-ADF Tasks"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_mysql_ananta_adf",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_ananta_2",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn2"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          emp_id as integer,",
+				"          fullName as string,",
+				"          dept_id as integer,",
+				"          dept_name as string,",
+				"          position as string,",
+				"          salary as integer,",
+				"          hire_date as date",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table',",
+				"     tableName: 'BR5',",
+				"     store: 'mysql',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> source1",
+				"source1 derive(each(match(type=='string'), $$ = iif(\r",
+				"  instr($$, '^') > 0,\r",
+				"  replace(\r",
+				"    replace(\r",
+				"      replace(\r",
+				"        replace(\r",
+				"          replace(\r",
+				"            toString(split($$, '^')),\r",
+				"            '[\"', '[{\"'\r",
+				"          ),\r",
+				"          '\",\"', '\"},{\"'\r",
+				"        ),\r",
+				"        '\"]', '\"}]'\r",
+				"      ),\r",
+				"      '{\"', concat('{\"', $0, '\":\"')\r",
+				"    ),\r",
+				"    '\"[{', '[{'\r",
+				"  ),\r",
+				"  iif(\r",
+				"    instr($$, ' ') > 0,\r",
+				"    replace(\r",
+				"      replace(\r",
+				"        replace(\r",
+				"          replace(\r",
+				"            replace(\r",
+				"              toString(split($$, ' ')),\r",
+				"              '[\"', '[{\"'\r",
+				"            ),\r",
+				"            '\",\"', '\"},{\"'\r",
+				"          ),\r",
+				"          '\"]', '\"}]'\r",
+				"        ),\r",
+				"        '{\"', concat('{\"', $0, '\":\"')\r",
+				"      ),\r",
+				"      '\"[{', '[{'\r",
+				"    ),\r",
+				"    $$\r",
+				"  )\r",
+				"))) ~> derivedColumn2",
+				"derivedColumn2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delimited',",
+				"     fileSystem: 'output',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true,",
+				"     partitionFileNames:['my_json_dyn_col_op_data2.csv'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}

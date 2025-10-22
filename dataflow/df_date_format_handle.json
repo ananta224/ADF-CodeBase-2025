@@ -1,0 +1,122 @@
+{
+	"name": "df_date_format_handle",
+	"properties": {
+		"folder": {
+			"name": "Ananta"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_mysql_ananta_adf",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_ananta_2",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id as integer,",
+				"          event_name as string,",
+				"          event_date as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table',",
+				"     tableName: 'raw_events',",
+				"     store: 'mysql',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> source1",
+				"source1 derive(each(match(name=='event_date'), $$ = iif(\r",
+				"    instr($$, \"/\") > 0,\r",
+				"    toDate($$, 'dd/MM/yyyy'),\r",
+				"iif(\r",
+				"    instr($$, \".\") > 0 && length($$) == 10,\r",
+				"    toDate($$, 'dd.MM.yyyy'),\r",
+				"iif(\r",
+				"    instr($$, \"-\") > 0 && (\r",
+				"        instr($$, \"Jan\") > 0 ||\r",
+				"        instr($$, \"Feb\") > 0 ||\r",
+				"        instr($$, \"Mar\") > 0 ||\r",
+				"        instr($$, \"Apr\") > 0 ||\r",
+				"        instr($$, \"May\") > 0 ||\r",
+				"        instr($$, \"Jun\") > 0 ||\r",
+				"        instr($$, \"Jul\") > 0 ||\r",
+				"        instr($$, \"Aug\") > 0 ||\r",
+				"        instr($$, \"Sep\") > 0 ||\r",
+				"        instr($$, \"Oct\") > 0 ||\r",
+				"        instr($$, \"Nov\") > 0 ||\r",
+				"        instr($$, \"Dec\") > 0\r",
+				"    ),\r",
+				"    toDate($$, 'dd-MMM-yyyy'),\r",
+				"iif(\r",
+				"    instr($$, \",\") > 0 && (\r",
+				"        instr($$, \"Jan\") > 0 ||\r",
+				"        instr($$, \"Feb\") > 0 ||\r",
+				"        instr($$, \"Mar\") > 0 ||\r",
+				"        instr($$, \"Apr\") > 0 ||\r",
+				"        instr($$, \"May\") > 0 ||\r",
+				"        instr($$, \"Jun\") > 0 ||\r",
+				"        instr($$, \"Jul\") > 0 ||\r",
+				"        instr($$, \"Aug\") > 0 ||\r",
+				"        instr($$, \"Sep\") > 0 ||\r",
+				"        instr($$, \"Oct\") > 0 ||\r",
+				"        instr($$, \"Nov\") > 0 ||\r",
+				"        instr($$, \"Dec\") > 0\r",
+				"    ),\r",
+				"    toDate($$, 'MMM dd, yyyy'),\r",
+				"iif(\r",
+				"    instr($$, \",\") > 0 && (\r",
+				"        instr($$, \"January\") > 0 ||\r",
+				"        instr($$, \"February\") > 0 ||\r",
+				"        instr($$, \"March\") > 0 ||\r",
+				"        instr($$, \"April\") > 0 ||\r",
+				"        instr($$, \"May\") > 0 ||\r",
+				"        instr($$, \"June\") > 0 ||\r",
+				"        instr($$, \"July\") > 0 ||\r",
+				"        instr($$, \"August\") > 0 ||\r",
+				"        instr($$, \"September\") > 0 ||\r",
+				"        instr($$, \"October\") > 0 ||\r",
+				"        instr($$, \"November\") > 0 ||\r",
+				"        instr($$, \"December\") > 0\r",
+				"    ),\r",
+				"    toDate($$, 'MMMM dd, yyyy'),\r",
+				"iif(\r",
+				"    instr($$, \"th\") > 0,\r",
+				"    toDate(replace($$, 'th', ''), 'MMMM dd, yyyy'),\r",
+				"iif(\r",
+				"    instr($$, \".\") > 0 && instr($$, \"2025\") > 0,\r",
+				"    toDate($$, 'yyyy.MM.dd'),\r",
+				"toDate('1900-01-01')  \r",
+				"))))))))) ~> derivedColumn1",
+				"derivedColumn1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delimited',",
+				"     fileSystem: 'output',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: false,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
+			]
+		}
+	}
+}

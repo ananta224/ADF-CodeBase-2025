@@ -1,0 +1,22 @@
+{
+	"name": "ds_input_error_json_xml",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_ananta_2",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "Ananta"
+		},
+		"annotations": [],
+		"type": "Xml",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "Input_error.json",
+				"fileSystem": "input"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

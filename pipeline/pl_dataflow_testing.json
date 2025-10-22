@@ -1,0 +1,144 @@
+{
+	"name": "pl_dataflow_testing",
+	"properties": {
+		"activities": [
+			{
+				"name": "df_br_2_dyn_column_range",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_br_4_dyn_column_range",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Lookup",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "df_br_2_dyn_column_range",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "dl_adls_csv_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"containerName": "output",
+							"fileName": "my_json_dyn_col_op_data.csv"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Copy data1",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Lookup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureMySqlSource",
+						"query": {
+							"value": "DROP TABLE IF EXISTS dyn_col_tb;\nCREATE TABLE dyn_col_tb(\ntest_col LONGTEXT\n);\n\nINSERT INTO dyn_col_tb(test_col) VALUES('@{activity('Lookup').output.value}');\n\nSELECT REPLACE(REPLACE(test_col,'\"[{','[{'),'}]\"','}]') from dyn_col_tb;",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_mysql_ananta_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"TableName": "dyn_col_tb"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_output__ananta_csv_json_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"fileName": "my.json"
+						}
+					}
+				]
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-08-05T10:44:27Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

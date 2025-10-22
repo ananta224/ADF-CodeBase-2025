@@ -1,0 +1,175 @@
+{
+	"name": "pl_testing_split_json",
+	"properties": {
+		"activities": [
+			{
+				"name": "df_br_2_json_convert",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_br_2_json_convert_copy1",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Merge Two JSON File",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "df_br_2_json_convert",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureMySqlSource",
+						"query": "\nSELECT concat(COL1,COL2) FROM JSON_TB;",
+						"queryTimeout": "02:00:00"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_mysql_ananta_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"TableName": "JSON_TB"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_output__ananta_csv_json_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"fileName": "mytotaljson_data.json"
+						}
+					}
+				]
+			},
+			{
+				"name": "Convert To proper JSON",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Merge Two JSON File",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"sink": {
+						"type": "JsonSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "JsonWriteSettings",
+							"filePattern": "arrayOfObjects"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_ananta_output_json_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"fileName": "mytotaljson_data.json"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_ananta_output_json_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"fileName": "my_output_ananta.json"
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"jsonFile1": {
+				"type": "string",
+				"defaultValue": "jsonfile1.json"
+			},
+			"jsonFile2": {
+				"type": "string",
+				"defaultValue": "jsonfile2.json"
+			},
+			"json_outp_file_name": {
+				"type": "string",
+				"defaultValue": ".json"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-07-28T12:49:23Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

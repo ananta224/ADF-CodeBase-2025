@@ -1,0 +1,77 @@
+{
+	"name": "df_br_5_product_category",
+	"properties": {
+		"folder": {
+			"name": "BR-ADF Tasks"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_mysql_ananta_adf",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_ananta_2",
+						"type": "LinkedServiceReference"
+					},
+					"name": "Sink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "GroupByCategory"
+				},
+				{
+					"name": "CollectTheProduct"
+				},
+				{
+					"name": "ValidJson"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          ProductID as integer,",
+				"          Category as string,",
+				"          ProductName as string,",
+				"          Price as decimal(10,2),",
+				"          Stock as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table',",
+				"     tableName: 'ProductCatalog',",
+				"     store: 'mysql',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> source1",
+				"source1 aggregate(groupBy(Category),",
+				"     products = collect(@(ProductID=ProductID,ProductName=ProductName,Price=Price,Stock=Stock))) ~> GroupByCategory",
+				"GroupByCategory aggregate(groupBy(Category),",
+				"     products = collect(@(products=products))) ~> CollectTheProduct",
+				"CollectTheProduct aggregate(product_category_tb = collect(@(Category=Category,products=products))) ~> ValidJson",
+				"ValidJson sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delimited',",
+				"     fileSystem: 'output',",
+				"     folderPath: 'my_temp_folder',",
+				"     rowDelimiter: '',",
+				"     columnDelimiter: '',",
+				"     escapeChar: '',",
+				"     quoteChar: '',",
+				"     columnNamesAsHeader: false,",
+				"     partitionFileNames:['ProductCaterogy.json'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> Sink"
+			]
+		}
+	}
+}

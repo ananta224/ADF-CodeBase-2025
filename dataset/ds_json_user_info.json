@@ -1,0 +1,45 @@
+{
+	"name": "ds_json_user_info",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_ananta_2",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "Ananta"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "user_info.json",
+				"fileSystem": "input"
+			}
+		},
+		"schema": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string"
+				},
+				"email": {
+					"type": "string"
+				},
+				"location": {
+					"type": "string"
+				},
+				"skills": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"isStudent": {
+					"type": "boolean"
+				}
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,434 @@
+{
+	"name": "pl_dataflow_for_position_json",
+	"properties": {
+		"activities": [
+			{
+				"name": "df_br_2_json_convert",
+				"type": "ExecuteDataFlow",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_br_2_json_convert_copy_position",
+						"type": "DataFlowReference",
+						"parameters": {
+							"jsonfile1": {
+								"value": "'@{pipeline().parameters.json1}'",
+								"type": "Expression"
+							},
+							"jsonfile2": {
+								"value": "'@{pipeline().parameters.json2}'",
+								"type": "Expression"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Merge Two JSON File",
+				"type": "Copy",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [
+					{
+						"activity": "Lookup File1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Lookup File2",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureMySqlSource",
+						"query": {
+							"value": "@concat(\n  'TRUNCATE TABLE JSON_TB1;',\n  'INSERT INTO JSON_TB1 (COL1, COL2) VALUES (''',\n  string(activity('Lookup File1').output.value),\n  ''', ''',\n  string(activity('Lookup File2').output.value),\n  '''); ',\n  'SELECT REPLACE(CONCAT(COL1, COL2), '']['', '','') FROM JSON_TB1;'\n)\n",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_mysql_ananta_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"TableName": "JSON_TB1"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_output__ananta_csv_json_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"fileName": {
+								"value": "hello_world_07.json",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Lookup File1",
+				"type": "Lookup",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [
+					{
+						"activity": "df_br_2_json_convert",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_adls_json_multiple_file",
+						"type": "DatasetReference",
+						"parameters": {
+							"containerName": {
+								"value": "output",
+								"type": "Expression"
+							},
+							"fileName": {
+								"value": "@pipeline().parameters.json1",
+								"type": "Expression"
+							}
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Lookup File2",
+				"type": "Lookup",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [
+					{
+						"activity": "df_br_2_json_convert",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_adls_json_multiple_file",
+						"type": "DatasetReference",
+						"parameters": {
+							"containerName": {
+								"value": "output",
+								"type": "Expression"
+							},
+							"fileName": {
+								"value": "@pipeline().parameters.json2",
+								"type": "Expression"
+							}
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "dataflow for position",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Merge Two JSON File",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_escape_remove",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Merge Two JSON File_copy1",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Lookup File1_copy1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Lookup File2_copy1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureMySqlSource",
+						"query": {
+							"value": "@{concat(\n  'TRUNCATE TABLE JSON_TB1;',\n  'INSERT INTO JSON_TB1 (COL1, COL2) VALUES (''',\n  string(activity('Lookup File1_copy1').output.value),\n  ''', ''',\n  string(activity('Lookup File2_copy1').output.value),\n  '''); ')}\nSELECT REPLACE(REPLACE(REPLACE(REPLACE(CONCAT(COL1, COL2), '][', ','),'\"[', '[ '),']\"', ']'),'\\\"','\"') as col1 FROM JSON_TB1;",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_mysql_ananta_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"TableName": "JSON_TB1"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_output__ananta_csv_json_dyn",
+						"type": "DatasetReference",
+						"parameters": {
+							"fileName": "my_partition_output.json"
+						}
+					}
+				]
+			},
+			{
+				"name": "Lookup File1_copy1",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "dataflow for position",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_adls_json_multiple_file",
+						"type": "DatasetReference",
+						"parameters": {
+							"containerName": {
+								"value": "output",
+								"type": "Expression"
+							},
+							"fileName": "myPartition1.json"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Lookup File2_copy1",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "dataflow for position",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_adls_json_multiple_file",
+						"type": "DatasetReference",
+						"parameters": {
+							"containerName": {
+								"value": "output",
+								"type": "Expression"
+							},
+							"fileName": "myPartition2.json"
+						}
+					},
+					"firstRowOnly": false
+				}
+			}
+		],
+		"parameters": {
+			"json1": {
+				"type": "string",
+				"defaultValue": "myPartition1.json"
+			},
+			"json2": {
+				"type": "string",
+				"defaultValue": "myjsondata2.json"
+			},
+			"ouputJson": {
+				"type": "string",
+				"defaultValue": "mytotaljson_data.json"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-08-01T04:52:27Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

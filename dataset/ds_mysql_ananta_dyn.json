@@ -1,0 +1,24 @@
+{
+	"name": "ds_mysql_ananta_dyn",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_mysql_ananta_adf",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"TableName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureMySqlTable",
+		"schema": [],
+		"typeProperties": {
+			"tableName": {
+				"value": "@dataset().TableName",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

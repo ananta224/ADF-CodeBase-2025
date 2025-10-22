@@ -1,0 +1,44 @@
+{
+	"name": "ds_pipeline_to_run_dyn",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_ananta_2",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"Config_File_Name": {
+				"type": "string",
+				"defaultValue": "pipeline_to_run.csv"
+			},
+			"Container_Name": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().Config_File_Name",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().Container_Name",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "pipeline_name",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

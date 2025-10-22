@@ -1,0 +1,141 @@
+{
+	"name": "df_br_4_dyn_column_range_without_lookup",
+	"properties": {
+		"folder": {
+			"name": "BR-ADF Tasks"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_mysql_ananta_adf",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_ananta_2",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "splitDataWithArr"
+				},
+				{
+					"name": "addNameWithObj"
+				},
+				{
+					"name": "validateArray"
+				},
+				{
+					"name": "IDgenerate"
+				},
+				{
+					"name": "countRcd"
+				},
+				{
+					"name": "combineIDwithRCD"
+				},
+				{
+					"name": "makeValidJson"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          emp_id as integer,",
+				"          fullName as string,",
+				"          dept_id as integer,",
+				"          dept_name as string,",
+				"          position as string,",
+				"          salary as integer,",
+				"          hire_date as date",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table',",
+				"     tableName: 'employee_pos_tb',",
+				"     store: 'mysql',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> source1",
+				"source1 derive(each(match(type=='string'), $$ = replace(\r",
+				"    replace(\r",
+				"        replace(\r",
+				"            iif(\r",
+				"                instr($$, '^') != 0,\r",
+				"                toString(split($$, '^')),\r",
+				"                $$\r",
+				"            ), '[\"', concat('[{\"', $0, '\":\"')\r",
+				"        ), '\",\"', concat('\"},{\"', $0, '\":\"')\r",
+				"    ), '\"]', '\"}]'\r",
+				"))) ~> splitDataWithArr",
+				"splitDataWithArr derive(each(match(true()), $$ = iif(\r",
+				"     $# == 1,\r",
+				"     concat('{\"', toString($0), '\":\"', toString($$), '\"'),\r",
+				"     iif(\r",
+				"          $# == size(columnNames()),\r",
+				"          concat('\"', toString($0), '\":\"', toString($$), '\"}'),\r",
+				"          concat('\"', toString($0), '\":\"', toString($$), '\"')\r",
+				"     )\r",
+				"))) ~> addNameWithObj",
+				"addNameWithObj derive(each(match(type=='string'), $$ = replace(replace($$, '\"[', '['), ']\"', ']'))) ~> validateArray",
+				"validateArray keyGenerate(output(id as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> IDgenerate",
+				"IDgenerate aggregate(cnt = count(id)) ~> countRcd",
+				"countRcd, IDgenerate join(true(),",
+				"     joinType:'cross',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> combineIDwithRCD",
+				"combineIDwithRCD derive(each(match(true()), $$ = iif(\r",
+				"     instr(toString($$), '{') == 1,\r",
+				"     iif(\r",
+				"          id == 1,\r",
+				"          replace(toString($$), concat('{\"', toString($0)), concat('[{\"', toString($0))),\r",
+				"          concat(',', toString($$))\r",
+				"     ),\r",
+				"     iif(\r",
+				"          instr(toString($$), '}') == length(toString($$)),\r",
+				"          iif(\r",
+				"               id == cnt,\r",
+				"               replace(toString($$), toString($$), concat(toString($$), ']')),\r",
+				"               toString($$)\r",
+				"          ),\r",
+				"          toString($$)\r",
+				"     )\r",
+				"))) ~> makeValidJson",
+				"makeValidJson sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delimited',",
+				"     fileSystem: 'output',",
+				"     folderPath: 'my_temp_folder',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: ' ',",
+				"     quoteChar: ' ',",
+				"     columnNamesAsHeader: false,",
+				"     partitionFileNames:['dyn_column_json_data.json'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          emp_id,",
+				"          fullName,",
+				"          dept_id,",
+				"          dept_name,",
+				"          position,",
+				"          salary,",
+				"          hire_date",
+				"     ),",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}
