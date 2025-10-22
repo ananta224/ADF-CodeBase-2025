@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-ananta-2"
+		},
+		"ls_adls_ananta_2_accountKey": {
+			"value": ""
+		},
+		"ls_mysql_ananta_adf_connectionString": {
+			"value": ""
+		},
+		"ls_adls_ananta_2_properties_typeProperties_url": {
+			"value": "https://adlssaadf.dfs.core.windows.net/"
+		},
+		"ls_http_server_github_properties_typeProperties_url": {
+			"value": "https://raw.githubusercontent.com/"
+		}
+	}
+}

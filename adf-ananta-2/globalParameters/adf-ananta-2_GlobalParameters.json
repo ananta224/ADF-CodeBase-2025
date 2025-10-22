@@ -1,0 +1,33 @@
+{
+	"GlobalContainerName": {
+		"type": "string",
+		"value": "output/global-output"
+	},
+	"outputContainer": {
+		"type": "string",
+		"value": "output/global-parameter"
+	},
+	"pipeline_to_run": {
+		"type": "array",
+		"value": [
+			"pipeline_1",
+			"pipeline_2"
+		]
+	},
+	"inBoundDirectory": {
+		"type": "string",
+		"value": "input/inbound"
+	},
+	"outBoundDirectory": {
+		"type": "string",
+		"value": "input/outbound"
+	},
+	"Config_File_Name": {
+		"type": "string",
+		"value": "pipeline_to_run.csv"
+	},
+	"paramfile": {
+		"type": "string",
+		"value": "input/paramfile"
+	}
+}
