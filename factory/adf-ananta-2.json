@@ -33,6 +33,10 @@
 				"type": "string",
 				"value": "input/paramfile"
 			}
+		},
+		"globalConfigurations": {
+			"factoryStagingLSReferenceName": "ls_adls_ananta_2",
+			"factoryStagingLSType": "LinkedServiceReference"
 		}
 	},
 	"location": "centralindia",
